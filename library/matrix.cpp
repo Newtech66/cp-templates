@@ -4,7 +4,7 @@ using namespace std;
 //-------------MATRIX START
 
 //REMEMBER: None of the functions assume modulo, add as necessary
-//LIST OF FUNCTIONS: add[+,+=], mult[*] (no mod), scalar mult[*,*=], modulo[%,%=], read(), print(), access[M(i,j)]
+//LIST OF FUNCTIONS: add[+,+=], mult[*] (no mod),matrix modulo multiplication [mod_mult(Matrix, modulo)], scalar mult[*,*=], modulo[%,%=], read(), print(), access[M(i,j)]
 template<typename T>
 class Matrix
 {
@@ -39,6 +39,7 @@ public:
     Matrix operator+(const Matrix&);       //matrix addition
     Matrix& operator+=(const Matrix&);
     Matrix operator*(const Matrix&);       //matrix multiplication without modulo
+    Matrix mod_mult(const Matrix&,const long long int&);  //matrix multiplication with modulo
     Matrix& operator*=(const long long int&);          //multiplication with a scalar
     Matrix operator*(const long long int&);
     Matrix& operator%=(const long long int&);         //modulo
@@ -100,6 +101,34 @@ Matrix<T> Matrix<T>::operator*(const Matrix<T>& M)
 }
 
 template<typename T>
+Matrix<T> Matrix<T>::mod_mult(const Matrix& M,const long long int& modulo)
+{
+    if(m!=M.n)
+    {
+        cerr<<"Matrix multiplication failure: sizes do not match\n M1(r,c)=("<<n<<","<<m<<")\n M2(r,c)=("<<M.n<<","<<M.m<<")";
+        exit(0);
+    }
+    Matrix<T> res(n,M.m);
+    for(int i=0;i<n;i++)
+    {
+        for(int j=0;j<M.m;j++)
+        {
+            res.mat[i][j]=0;
+            for(int k=0;k<m;k++)
+            {
+                res.mat[i][j]+=mat[i][k]*M.mat[k][j];
+                if(res.mat[i][j]>=modulo || res.mat[i][j]<=(-modulo))
+                {
+                    res.mat[i][j]%=modulo;
+                }
+                if(res.mat[i][j]<0) res.mat[i][j]+=modulo;
+                }
+        }
+    }
+    return res;
+}
+
+template<typename T>
 Matrix<T>& Matrix<T>::operator*=(const long long int& s)
 {
     for(int i=0;i<n;i++)
@@ -128,7 +157,7 @@ Matrix<T>& Matrix<T>::operator%=(const long long int& modulo)
     {
         for(int j=0;j<m;j++)
         {
-            if(mat[i][j]>=modulo || mat[i][j]<(-modulo))
+            if(mat[i][j]>=modulo || mat[i][j]<=(-modulo))
             {
                 mat[i][j]%=modulo;
             }
