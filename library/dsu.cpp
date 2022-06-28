@@ -5,7 +5,7 @@ struct DSU
     vector<int> p;
     DSU(int val)
     {
-        n=val;
+        n=val+1;
         sz.resize(n);
         p.resize(n);
         fill(sz.begin(),sz.end(),1);
