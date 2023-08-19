@@ -2,55 +2,65 @@
 using namespace std;
 using lol=long long int;
 #define endl "\n"
-const lol mod1=1e9+7,mod2=998244353,mod3=100000000000000003,hashpr=31;
-const lol inf=1e18+8;
-const double eps=1e-12;
-const double PI=acos(-1.0);
-const int N=1e6+5;
-#include <ext/pb_ds/assoc_container.hpp> // Common file
-#include <ext/pb_ds/tree_policy.hpp> // Including tree_order_statistics_node_update
-using namespace __gnu_pbds;
-using ordered_set_type=lol;
-typedef tree<ordered_set_type,null_type,less<ordered_set_type>,rb_tree_tag,tree_order_statistics_node_update> ordered_set;
-//mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
 
 namespace FFT{
-    const int LEN=1<<20;
     const int P=998244353;
-    const int LENINV=998243401;
-    const lol W=565042129;  //take W such that W^LEN = 1 mod P
+    //for 1<<23
+    const lol MAXLEN=1<<23;
+    const lol W=15311432;  //take W such that W^MAXLEN = 1 mod P
+    lol binexp(lol b,lol p){
+        if(p==0)    return 1ll;
+        lol res=binexp(b,p/2);
+        res=(res*res)%P;
+        if(p&1)   res=(res*b)%P;
+        return res;
+    }
     vector<lol> fft(const vector<lol>& poly,lol ww){
-        if((int)poly.size()==1){
+        int n=(int)poly.size();
+        if(n==1){
             return poly;
         }
-        vector<lol> A,B;
-        for(int i=0;i<(int)poly.size();i+=2){
-            A.push_back(poly[i]);
-            B.push_back(poly[i+1]);
+        vector<lol> A(n/2),B(n/2);
+        for(int i=0;i<n;i+=2){
+            A[i/2]=poly[i];
+            B[i/2]=poly[i+1];
         }
         vector<lol> resA,resB;
-        resA=fft(A,(ww*ww)%P);
-        resB=fft(B,(ww*ww)%P);
-        vector<lol> res;
-        for(lol i=0,j=1;i<(int)poly.size();i++){
-            res.push_back((resA[i%(int)resA.size()]+j*resB[i%(int)resA.size()])%P);
-            j=(j*ww)%P;
+        lol ww2=ww*ww;
+        if(ww2>=P)  ww2-=P*(ww2/P);
+        resA=fft(A,ww2);
+        resB=fft(B,ww2);
+        vector<lol> res(n);
+        for(lol i=0,j=1;i<n;i++){
+            lol t=resA[(i>=n/2?i-n/2:i)]+j*resB[(i>=n/2?i-n/2:i)];
+            if(t>=P)    t-=P*(t/P);
+            res[i]=t;
+            j*=ww;
+            if(j>=P)    j-=P*(j/P);
         }
         return res;
     }
     vector<lol> mult(vector<lol> poly1,vector<lol> poly2){
-        poly1.resize(LEN,0);
-        poly2.resize(LEN,0);
-        vector<lol> pv1=fft(poly1,W);
-        vector<lol> pv2=fft(poly2,W);
-        vector<lol> pvres(LEN);
-        for(int i=0;i<LEN;i++){
-            pvres[i]=(pv1[i]*pv2[i])%P;
+        int j=1;
+        while(j<poly1.size()+poly2.size())   j<<=1;
+        poly1.resize(j,0);
+        poly2.resize(j,0);
+        lol ww=binexp(W,MAXLEN/j);
+        vector<lol> pv1=fft(poly1,ww);
+        vector<lol> pv2=fft(poly2,ww);
+        vector<lol> pvres(j);
+        for(int i=0;i<j;i++){
+            pvres[i]=pv1[i]*pv2[i];
+            if(pvres[i]>=P) pvres[i]-=P*(pvres[i]/P);
         }
-        vector<lol> res=fft(pvres,W);
+        vector<lol> res=fft(pvres,ww);
         //(n*a_0,n*a_n-1,...,n*a_1)
         reverse(res.begin()+1,res.end());
-        for(auto& t:res)    t=(t*LENINV)%P;
+        int j_1=binexp(j,P-2);
+        for(auto& t:res){
+            t*=j_1;
+            if(t>=P)    t-=P*(t/P);
+        }
         return res;
     }
 }
